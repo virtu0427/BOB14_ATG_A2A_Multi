@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import uuid
 from typing import Any, AsyncGenerator
 
@@ -28,8 +29,10 @@ from a2a.types import (
     GetTaskPushNotificationConfigParams,
     ListTaskPushNotificationConfigParams,
 )
-from a2a.utils.errors import ServerError
+
 from a2a.types import UnsupportedOperationError
+from a2a.utils.errors import ServerError
+from openai import AsyncOpenAI
 
 
 def extract_text(message: Message) -> str:
@@ -89,36 +92,91 @@ class BaseA2AHandler(RequestHandler):
         raise ServerError(error=UnsupportedOperationError())
 
 
+
+class LLMClient:
+    """Wrapper around OpenAI or a local Ollama server."""
+
+    def __init__(self) -> None:
+        api_key = os.getenv("OPENAI_API_KEY")
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        self.openai = AsyncOpenAI(api_key=api_key) if api_key else None
+        self.ollama_model = os.getenv("OLLAMA_MODEL")
+        self.ollama_base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+
+    async def complete(self, prompt: str, default: str) -> str:
+        if self.openai:
+            try:
+                completion = await self.openai.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                return completion.choices[0].message.content.strip()
+            except Exception:
+                pass
+        if self.ollama_model:
+            try:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.post(
+                        f"{self.ollama_base}/api/chat",
+                        json={
+                            "model": self.ollama_model,
+                            "messages": [{"role": "user", "content": prompt}],
+                        },
+                        timeout=30,
+                    )
+                    data = resp.json()
+                    return data.get("message", {}).get("content", default)
+            except Exception:
+                pass
+        return default
+
 class OrchestrationHandler(BaseA2AHandler):
     """Routes messages to domain agents via A2A."""
 
     def __init__(self) -> None:
         self.targets = {
-            "dispatch": ("http://localhost:8001", "Dispatch Agent"),
-            "delivery": ("http://localhost:8002", "Delivery Agent"),
-            "inbound": ("http://localhost:8003", "Inbound Agent"),
+            "dispatch": (
+                "http://localhost:8001",
+                "Dispatch Agent",
+                "Manages vehicle assignments",
+            ),
+            "delivery": (
+                "http://localhost:8002",
+                "Delivery Agent",
+                "Tracks shipment status",
+            ),
+            "inbound": (
+                "http://localhost:8003",
+                "Inbound Agent",
+                "Handles inventory intake",
+            ),
         }
+        self.llm = LLMClient()
 
     async def on_message_send(
         self, params: MessageSendParams, context: Any | None = None
     ) -> Message:
         text = extract_text(params.message)
-        if ":" not in text:
-            return Message(
-                message_id=str(uuid.uuid4()),
-                parts=[Part(TextPart(text="format: agent: message"))],
-                role=Role.agent,
-            )
-        target, content = text.split(":", 1)
-        target = target.strip().lower()
-        info = self.targets.get(target)
+        prompt = [
+            "You are a router that chooses the best agent for a request.",
+            "Agents:",
+        ]
+        for key, (_, _, desc) in self.targets.items():
+            prompt.append(f"- {key}: {desc}")
+        prompt.append(f"User message: {text}")
+        prompt.append("Return only the agent name or 'unknown'.")
+        choice = (
+            await self.llm.complete("\n".join(prompt), "unknown")
+        ).strip().lower()
+        info = self.targets.get(choice)
         if not info:
             return Message(
                 message_id=str(uuid.uuid4()),
-                parts=[Part(TextPart(text=f"unknown agent: {target}"))],
+                parts=[Part(TextPart(text="unable to route request"))],
                 role=Role.agent,
             )
-        url, name = info
+        url, name, _ = info
+
         card = AgentCard(
             url=url,
             name=name,
@@ -135,7 +193,7 @@ class OrchestrationHandler(BaseA2AHandler):
             req = SendMessageRequest(
                 id=str(uuid.uuid4()),
                 params=MessageSendParams(
-                    message=create_text_message_object(content=content.strip())
+                    message=create_text_message_object(content=text)
                 ),
             )
             resp = await client.send_message(req)

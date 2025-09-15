@@ -1,8 +1,7 @@
-a2a-sdk
+a2a-sdk[http-server]
 fastapi
 uvicorn
 openai
 sse-starlette
 httpx
-mcp
 flask
