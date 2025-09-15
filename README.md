@@ -1,6 +1,8 @@
 # A2A Multi-Agent Environment
 
+
 This repository demonstrates how to run multiple LLM-backed agents using the [Google Agent2Agent (A2A) protocol](https://github.com/a2aproject/A2A). Code is grouped into `agents/` for the services, `client/` for the Flask UI, and `tools/` for utilities such as the SQLite MCP server.
+
 
 ## Components
 
@@ -21,11 +23,13 @@ Domain agents invoke an LLM when generating responses. They support either the O
 - To use a local model, run an Ollama instance and set `OLLAMA_MODEL` (and optionally `OLLAMA_BASE_URL`).
 - If neither option is available, agents fall back to echoing the stored text.
 
+
 ## Setup
 
 ```bash
 pip install -r requirements.txt
 ```
+
 
 Run each agent from the `agents/` package in a separate terminal:
 
