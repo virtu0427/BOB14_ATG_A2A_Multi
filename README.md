@@ -1,7 +1,7 @@
 # A2A Multi-Agent Environment
 
-This repository demonstrates how to run multiple LLM-backed agents using the [Google Agent2Agent (A2A) protocol](https://github.com/a2aproject/A2A). Code is grouped into `agents/` for the services, `client/` for the Flask UI, and `tools/` for utilities such as the SQLite MCP server.
 
+This repository demonstrates how to run multiple LLM-backed agents using the [Google Agent2Agent (A2A) protocol](https://github.com/a2aproject/A2A). Code is grouped into `agents/` for the services, `client/` for the Flask UI, and `tools/` for utilities such as the SQLite MCP server.
 ## Components
 
 | Agent | Description | Port | Database |
@@ -40,6 +40,7 @@ The orchestration agent analyzes incoming text and delegates it to one of the
 domain agents by consulting their agent cards. Requests are exchanged using
 the official A2A client APIs, so agents can run in completely separate
 environments.
+
 
 ### Accessing Databases via MCP
 

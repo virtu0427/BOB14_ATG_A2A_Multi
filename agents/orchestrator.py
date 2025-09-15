@@ -29,6 +29,7 @@ from a2a.types import (
     GetTaskPushNotificationConfigParams,
     ListTaskPushNotificationConfigParams,
 )
+
 from a2a.types import UnsupportedOperationError
 from a2a.utils.errors import ServerError
 from openai import AsyncOpenAI
@@ -91,6 +92,7 @@ class BaseA2AHandler(RequestHandler):
         raise ServerError(error=UnsupportedOperationError())
 
 
+
 class LLMClient:
     """Wrapper around OpenAI or a local Ollama server."""
 
@@ -127,7 +129,6 @@ class LLMClient:
             except Exception:
                 pass
         return default
-
 
 class OrchestrationHandler(BaseA2AHandler):
     """Routes messages to domain agents via A2A."""
@@ -175,6 +176,7 @@ class OrchestrationHandler(BaseA2AHandler):
                 role=Role.agent,
             )
         url, name, _ = info
+
         card = AgentCard(
             url=url,
             name=name,
