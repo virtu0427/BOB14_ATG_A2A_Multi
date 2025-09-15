@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ session[1] }}</h1>
+<div class="chat" id="chat">
+  {% for m in messages %}
+    <div class="msg-{{ m[0] }}">
+      <strong>{{ 'You' if m[0]=='user' else session[1] }}:</strong> {{ m[1] }}
+    </div>
+  {% endfor %}
+</div>
+<form method="post">
+  <input name="message" style="width:80%" autocomplete="off" autofocus>
+  <button type="submit">Send</button>
+</form>
+<p><a href="{{ url_for('index') }}">Back</a></p>
+{% endblock %}
