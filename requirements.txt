@@ -1,0 +1,9 @@
+a2a-sdk
+fastapi
+uvicorn
+openai
+sse-starlette
+httpx
+mcp
+
+flask

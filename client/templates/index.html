@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>A2A Chat Client</h1>
+<h2>Create Conversation</h2>
+<form method="post">
+  <label>Name: <input name="name" required></label><br>
+  <label>URL: <input name="url" placeholder="localhost" required></label><br>
+  <label>Port: <input name="port" placeholder="8001" required></label><br>
+  <button type="submit">Create</button>
+</form>
+
+<h2>Saved Conversations</h2>
+<ul>
+  {% for s in sessions %}
+    <li><a href="{{ url_for('chat', session_id=s[0]) }}">{{ s[1] }} ({{ s[2] }})</a></li>
+  {% else %}
+    <li>No sessions.</li>
+  {% endfor %}
+</ul>
+{% endblock %}
